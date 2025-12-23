@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 
 # Configuration de la page
-st.set_page_config(page_title="Calculateur DIP OB", layout="centered")
+st.set_page_config(page_title="Calculateur Fonderie", layout="centered")
 
-# --- BASE DE DONNÉES ---
+# --- BASE DE DONNÉES --- (Identique)
 DATA = {
     "7778": {"aluminium": {4: (67, 94)}, "carbone": {4: (70, 100)}, "calcium": {4: (12, 99)}, "bore": {4: (70, 19)}, "manganèse": {4: (90, 78)}, "nobium": {4: (90, 66)}, "silicium": {4: (85, 76)}, "Titane": {4: (75, 69)}},
     "7777": {"aluminium": {4: (100, 94), 5: (100, 94)}, "carbone": {4: (100, 100), 5: (100, 100)}, "calcium": {4: (13, 99), 5: (15, 99)}, "bore": {4: (89, 19), 5: (89, 19)}, "manganèse": {4: (100, 78), 5: (100, 78)}, "nobium": {4: (89, 66), 5: (91, 66)}, "silicium": {4: (90, 76), 5: (90, 76)}, "Titane": {4: (85, 69), 5: (83, 69)}},
@@ -27,7 +27,7 @@ DATA = {
     "4647": {"aluminium": {4: (100, 94), 5: (100, 94)}, "carbone": {4: (100, 100), 5: (100, 100)}, "calcium": {4: (13, 99), 5: (11, 99)}, "bore": {4: (89, 19), 5: (89, 19)}, "manganèse": {4: (100, 78), 5: (100, 78)}, "nobium": {4: (89, 66), 5: (91, 66)}, "silicium": {4: (90, 76), 5: (90, 76)}, "Titane": {4: (85, 69), 5: (83, 69)}}
 }
 
-st.title("📟 Calculateur DIP OB")
+st.title("📟 Calculateur Fonderie")
 
 # --- PARAMÈTRES GÉNÉRAUX ---
 col1, col2, col3 = st.columns(3)
@@ -41,24 +41,45 @@ with col3:
 
 st.divider()
 
-# --- GÉNÉRATION DES LIGNES ---
+# --- SECTION DÉSULFURATION ---
+st.subheader("📉 Désulfuration")
+c_s1, c_s2 = st.columns(2)
+with c_s1:
+    s_init = st.text_input("S Initial (%)", key="s_init")
+with c_s2:
+    s_final = st.text_input("S Final (%)", key="s_final")
+
+if s_init and s_final:
+    try:
+        val_init = float(s_init.replace(',', '.'))
+        val_final = float(s_final.replace(',', '.'))
+        if val_init > 0:
+            taux = ((val_init - val_final) / val_init) * 100
+            st.success(f"**Taux de désulfuration : {taux:.2f}%**")
+        else:
+            st.warning("Le S initial doit être supérieur à 0.")
+    except ValueError:
+        st.error("Format de soufre invalide.")
+
+st.divider()
+
+# --- GÉNÉRATION DES LIGNES MÉTAUX ---
 saisies = {}
 elements = DATA[nuance]
 ordre = []
 
 if "manganèse" in elements:
-    ordre.append(("Mn Carb ", "mn_carb", 78, elements["manganèse"]))
-    ordre.append(("Mn Affi ", "mn_affi", 82, elements["manganèse"]))
+    ordre.append(("Mn Carb (78%)", "mn_carb", 78, elements["manganèse"]))
+    ordre.append(("Mn Affi (82%)", "mn_affi", 82, elements["manganèse"]))
 
 for k, v in elements.items():
     if k != "manganèse":
         ordre.append((k.capitalize(), k, None, v))
 
-# Entête de section
 st.write("### 🧪 Saisie des Analyses")
 
 for label, key_id, teneur_fixe, circuits in ordre:
-    st.write(f"{label}")
+    st.write(f"**{label}**")
     r1, r2 = st.columns(2)
     with r1:
         ana_val = st.text_input("ANA", key=f"a_{key_id}")
@@ -84,7 +105,6 @@ if st.button("CALCULER", type="primary", use_container_width=True):
         carb_induit = 0.0
         resultats_final = []
 
-        # 1. Mn Carb (pour le Carbone Induit)
         d_mn = saisies.get("mn_carb")
         if d_mn and d_mn["vis"] > d_mn["ana"]:
             rend = d_mn["circuits"].get(circuit, (0, 0))[0]
@@ -93,7 +113,6 @@ if st.button("CALCULER", type="primary", use_container_width=True):
                 ajout_mn = max(0, ajout_mn)
                 carb_induit = (ajout_mn * 0.067) / poids_kg * 100
 
-        # 2. Boucle de calcul
         for key_id, d in saisies.items():
             ana_effective = d["ana"]
             note_carbone = ""
@@ -125,4 +144,3 @@ if st.button("CALCULER", type="primary", use_container_width=True):
 
 if st.button("RAZ (Réinitialiser)"):
     st.rerun()
-    
