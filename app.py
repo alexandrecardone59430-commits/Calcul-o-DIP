@@ -46,7 +46,6 @@ saisies = {}
 elements = DATA[nuance]
 ordre = []
 
-# Organisation des éléments (Mn en premier pour l'induit C)
 if "manganèse" in elements:
     ordre.append(("Mn Carb (78%)", "mn_carb", 78, elements["manganèse"]))
     ordre.append(("Mn Affi (82%)", "mn_affi", 82, elements["manganèse"]))
@@ -55,7 +54,6 @@ for k, v in elements.items():
     if k != "manganèse":
         ordre.append((k.capitalize(), k, None, v))
 
-# En-tête du tableau
 h1, h2, h3 = st.columns([2, 1, 1])
 h1.write("**ÉLÉMENT**")
 h2.write("**ANA (%)**")
@@ -88,7 +86,7 @@ if st.button("CALCULER", type="primary", use_container_width=True):
         carb_induit = 0.0
         resultats_final = []
 
-        # 1. ÉTAPE Mn Carb (Induit Carbone)
+        # 1. ÉTAPE Mn Carb
         if "mn_carb" in saisies:
             d = saisies["mn_carb"]
             rend = d["circuits"].get(circuit, (0, 0))[0]
@@ -96,11 +94,12 @@ if st.button("CALCULER", type="primary", use_container_width=True):
                 ajout_mn = ((d["vis"] - d["ana"]) / 100 * poids_kg) / (0.78 * rend / 100)
                 ajout_mn = max(0, ajout_mn)
                 carb_induit = (ajout_mn * 0.067) / poids_kg * 100
-                resultats_final.append({"Métal": d["label"], "Ajout (kg)": f"{ajout_mn:.2f}"})
+                # Virgule décalée de 3 rangs (/1000)
+                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": f"{ajout_mn/1000:.3f}"})
             else:
-                resultats_final.append({"Métal": d["label"], "Ajout (kg)": "0.00"})
+                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": "0.000"})
 
-        # 2. ÉTAPE Autres éléments (avec correction Carbone)
+        # 2. ÉTAPE Autres éléments
         for key_id, d in saisies.items():
             if key_id == "mn_carb": continue
             
@@ -108,25 +107,22 @@ if st.button("CALCULER", type="primary", use_container_width=True):
             if key_id == "carbone":
                 ana_finale += carb_induit
             
-            # Récupération Teneur et Rendement
             rend_tab, ten_tab = d["circuits"].get(circuit, (0,0))
             teneur = d["teneur_fixe"] if d["teneur_fixe"] else ten_tab
             rendement = rend_tab
 
             if d["vis"] > ana_finale and rendement > 0:
                 aj = ((d["vis"] - ana_finale) / 100 * poids_kg) / (teneur / 100 * rendement / 100)
-                resultats_final.append({"Métal": d["label"], "Ajout (kg)": f"{max(0, aj):.2f}"})
-            elif d["vis"] <= ana_finale and d["vis"] > 0:
-                resultats_final.append({"Métal": d["label"], "Ajout (kg)": "0.00 (OK)"})
+                # Virgule décalée de 3 rangs (/1000)
+                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": f"{max(0, aj)/1000:.3f}"})
             else:
-                resultats_final.append({"Métal": d["label"], "Ajout (kg)": "0.00"})
+                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": "0.000"})
 
         # Affichage
-        st.subheader("📋 RÉSULTATS")
+        st.subheader("📋 RÉSULTATS (Valeurs / 1000)")
         st.table(pd.DataFrame(resultats_final))
         if carb_induit > 0:
             st.warning(f"💡 Apport Mn -> Carbone : +{carb_induit:.3f}%")
 
 if st.button("RAZ (Réinitialiser)"):
     st.rerun()
-            
