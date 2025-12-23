@@ -73,9 +73,10 @@ if st.button("CALCULER LES AJOUTS", type="primary", use_container_width=True):
         if d["vis"] > d["ana"] and rend > 0:
             aj = ((d["vis"] - d["ana"]) / 100 * poids_kg) / (0.78 * rend / 100)
             carb_induit = (aj * 0.067) / poids_kg * 100
-            final_data.append({"Métal": d["label"], "Ajout (kg)": int(round(aj))})
+            # Division par 100 appliquée ici
+            final_data.append({"Métal": d["label"], "Ajout (/100)": round(aj / 100, 2)})
         else:
-            final_data.append({"Métal": d["label"], "Ajout (kg)": 0})
+            final_data.append({"Métal": d["label"], "Ajout (/100)": 0})
 
     # 2. Reste
     for key_id, d in saisies.items():
@@ -86,11 +87,13 @@ if st.button("CALCULER LES AJOUTS", type="primary", use_container_width=True):
         
         if d["vis"] > ana_f and rend > 0:
             aj = ((d["vis"] - ana_f) / 100 * poids_kg) / (teneur / 100 * rend / 100)
-            final_data.append({"Métal": d["label"], "Ajout (kg)": int(round(aj))})
+            # Division par 100 appliquée ici
+            final_data.append({"Métal": d["label"], "Ajout (/100)": round(aj / 100, 2)})
         else:
-            final_data.append({"Métal": d["label"], "Ajout (kg)": 0})
+            final_data.append({"Métal": d["label"], "Ajout (/100)": 0})
 
     st.divider()
-    st.subheader("📋 RÉSULTATS (kg)")
+    st.subheader("📋 RÉSULTATS (Valeurs divisées par 100)")
     st.table(pd.DataFrame(final_data))
     if carb_induit > 0: st.info(f"💡 Carbone induit : +{carb_induit:.4f}%")
+        
