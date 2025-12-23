@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Configuration de la page
-st.set_page_config(page_title="Calculateur Fonderie", layout="centered")
+st.set_page_config(page_title="Calculateur DIP OB", layout="centered")
 
 # --- BASE DE DONNÉES ---
 DATA = {
@@ -27,7 +27,7 @@ DATA = {
     "4647": {"aluminium": {4: (100, 94), 5: (100, 94)}, "carbone": {4: (100, 100), 5: (100, 100)}, "calcium": {4: (13, 99), 5: (11, 99)}, "bore": {4: (89, 19), 5: (89, 19)}, "manganèse": {4: (100, 78), 5: (100, 78)}, "nobium": {4: (89, 66), 5: (91, 66)}, "silicium": {4: (90, 76), 5: (90, 76)}, "Titane": {4: (85, 69), 5: (83, 69)}}
 }
 
-st.title("📟 Calculateur Fonderie")
+st.title("📟 Calculateur DIP OB")
 
 # --- PARAMÈTRES GÉNÉRAUX ---
 col1, col2, col3 = st.columns(3)
@@ -47,8 +47,8 @@ elements = DATA[nuance]
 ordre = []
 
 if "manganèse" in elements:
-    ordre.append(("Mn Carb (78%)", "mn_carb", 78, elements["manganèse"]))
-    ordre.append(("Mn Affi (82%)", "mn_affi", 82, elements["manganèse"]))
+    ordre.append(("Mn Carb ", "mn_carb", 78, elements["manganèse"]))
+    ordre.append(("Mn Affi ", "mn_affi", 82, elements["manganèse"]))
 
 for k, v in elements.items():
     if k != "manganèse":
