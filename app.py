@@ -27,7 +27,7 @@ DATA = {
     "4647": {"aluminium": {4: (100, 94), 5: (100, 94)}, "carbone": {4: (100, 100), 5: (100, 100)}, "calcium": {4: (13, 99), 5: (11, 99)}, "bore": {4: (89, 19), 5: (89, 19)}, "manganèse": {4: (100, 78), 5: (100, 78)}, "nobium": {4: (89, 66), 5: (91, 66)}, "silicium": {4: (90, 76), 5: (90, 76)}, "Titane": {4: (85, 69), 5: (83, 69)}}
 }
 
-st.title("📟 Calculateur Fonderie - Option B")
+st.title("📟 Calculateur Fonderie")
 
 # --- PARAMÈTRES GÉNÉRAUX ---
 col1, col2, col3 = st.columns(3)
@@ -36,8 +36,8 @@ with col1:
 with col2:
     circuit = st.selectbox("CIRCUIT :", [4, 5])
 with col3:
-    poids_t = st.number_input("POIDS POCHE (t) :", value=0.0, step=1.0, format="%.2f")
-    poids_kg = poids_t * 1000
+    poids_t_str = st.text_input("POIDS POCHE (t) :", value="")
+    poids_kg = float(poids_t_str.replace(',', '.')) * 1000 if poids_t_str else 0.0
 
 st.divider()
 
@@ -64,14 +64,16 @@ for label, key_id, teneur_fixe, circuits in ordre:
     with r1:
         st.write(f"**{label}**")
     with r2:
-        ana = st.number_input("", key=f"a_{key_id}", step=0.001, format="%.4f", label_visibility="collapsed")
+        ana_val = st.text_input("", key=f"a_{key_id}", label_visibility="collapsed")
     with r3:
-        vis = st.number_input("", key=f"v_{key_id}", step=0.001, format="%.4f", label_visibility="collapsed")
+        vis_val = st.text_input("", key=f"v_{key_id}", label_visibility="collapsed")
     
     saisies[key_id] = {
         "label": label,
-        "ana": ana,
-        "vis": vis,
+        "ana": float(ana_val.replace(',', '.')) if ana_val else 0.0,
+        "vis": float(vis_val.replace(',', '.')) if vis_val else 0.0,
+        "ana_str": ana_val if ana_val else "0",
+        "vis_str": vis_val if vis_val else "0",
         "teneur_fixe": teneur_fixe,
         "circuits": circuits
     }
@@ -80,49 +82,55 @@ st.divider()
 
 # --- CALCULS ---
 if st.button("CALCULER", type="primary", use_container_width=True):
-    if poids_t <= 0:
+    if poids_kg <= 0:
         st.error("Veuillez saisir un poids de poche.")
     else:
         carb_induit = 0.0
         resultats_final = []
 
-        # 1. ÉTAPE Mn Carb
-        if "mn_carb" in saisies:
-            d = saisies["mn_carb"]
-            rend = d["circuits"].get(circuit, (0, 0))[0]
-            if d["vis"] > d["ana"] and rend > 0:
-                ajout_mn = ((d["vis"] - d["ana"]) / 100 * poids_kg) / (0.78 * rend / 100)
+        # 1. Mn Carb (pour le Carbone Induit)
+        d_mn = saisies.get("mn_carb")
+        if d_mn and d_mn["vis"] > d_mn["ana"]:
+            rend = d_mn["circuits"].get(circuit, (0, 0))[0]
+            if rend > 0:
+                ajout_mn = ((d_mn["vis"] - d_mn["ana"]) / 100 * poids_kg) / (0.78 * rend / 100)
                 ajout_mn = max(0, ajout_mn)
                 carb_induit = (ajout_mn * 0.067) / poids_kg * 100
-                # Virgule décalée de 3 rangs (/1000)
-                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": f"{ajout_mn/1000:.3f}"})
-            else:
-                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": "0.000"})
 
-        # 2. ÉTAPE Autres éléments
+        # 2. Boucle de calcul pour tous les éléments
         for key_id, d in saisies.items():
-            if key_id == "mn_carb": continue
-            
-            ana_finale = d["ana"]
+            # Correction spécifique pour le carbone
+            ana_effective = d["ana"]
+            note_carbone = ""
             if key_id == "carbone":
-                ana_finale += carb_induit
+                ana_effective += carb_induit
+                if carb_induit > 0:
+                    note_carbone = f" (+{carb_induit:.3f} induit)"
             
+            # Calcul de l'ajout
             rend_tab, ten_tab = d["circuits"].get(circuit, (0,0))
             teneur = d["teneur_fixe"] if d["teneur_fixe"] else ten_tab
-            rendement = rend_tab
+            
+            ajout_final = 0.0
+            if d["vis"] > ana_effective and rend_tab > 0:
+                aj_kg = ((d["vis"] - ana_effective) / 100 * poids_kg) / (teneur / 100 * rend_tab / 100)
+                ajout_final = max(0, aj_kg)
+            
+            # Ajout au tableau récapitulatif
+            resultats_final.append({
+                "Métal": d["label"],
+                "Analyse (%)": d["ana_str"] + note_carbone,
+                "Visée (%)": d["vis_str"],
+                "Résultat": f"{ajout_final/1000:.3f}"
+            })
 
-            if d["vis"] > ana_finale and rendement > 0:
-                aj = ((d["vis"] - ana_finale) / 100 * poids_kg) / (teneur / 100 * rendement / 100)
-                # Virgule décalée de 3 rangs (/1000)
-                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": f"{max(0, aj)/1000:.3f}"})
-            else:
-                resultats_final.append({"Métal": d["label"], "Résultat (décalé)": "0.000"})
-
-        # Affichage
-        st.subheader("📋 RÉSULTATS (Valeurs / 1000)")
-        st.table(pd.DataFrame(resultats_final))
+        st.subheader("📋 RÉCAPITULATIF DES CALCULS")
+        # On affiche le DataFrame avec les nouvelles colonnes
+        st.dataframe(pd.DataFrame(resultats_final), use_container_width=True, hide_index=True)
+        
         if carb_induit > 0:
-            st.warning(f"💡 Apport Mn -> Carbone : +{carb_induit:.3f}%")
+            st.info(f"💡 Info : L'apport de carbone provenant du Mn Carb est de +{carb_induit:.4f}%")
 
 if st.button("RAZ (Réinitialiser)"):
     st.rerun()
+    
