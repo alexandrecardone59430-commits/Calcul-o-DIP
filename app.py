@@ -58,7 +58,7 @@ for k, v in elements.items():
 st.write("### 🧪 Saisie des Analyses")
 
 for label, key_id, teneur_fixe, circuits in ordre:
-    st.write(f"**{label}**")
+    st.write(f"{label}")
     r1, r2 = st.columns(2)
     with r1:
         ana_val = st.text_input("ANA", key=f"a_{key_id}")
