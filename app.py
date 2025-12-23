@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-# Configuration pour mobile et ordinateur
-st.set_page_config(page_title="Calculateur Option B", layout="centered")
+# Configuration de la page
+st.set_page_config(page_title="Calculateur Fonderie - Option B", layout="centered")
 
 # --- BASE DE DONNÉES ---
 DATA = {
@@ -27,92 +27,106 @@ DATA = {
     "4647": {"aluminium": {4: (100, 94), 5: (100, 94)}, "carbone": {4: (100, 100), 5: (100, 100)}, "calcium": {4: (13, 99), 5: (11, 99)}, "bore": {4: (89, 19), 5: (89, 19)}, "manganèse": {4: (100, 78), 5: (100, 78)}, "nobium": {4: (89, 66), 5: (91, 66)}, "silicium": {4: (90, 76), 5: (90, 76)}, "Titane": {4: (85, 69), 5: (83, 69)}}
 }
 
-st.title("📟 Calculateur Fonderie")
+st.title("📟 Calculateur Fonderie - Option B")
 
 # --- PARAMÈTRES GÉNÉRAUX ---
 col1, col2, col3 = st.columns(3)
 with col1:
-    nuance = st.selectbox("NUANCE", sorted(DATA.keys()))
+    nuance = st.selectbox("SÉLECTION NUANCE :", sorted(DATA.keys()))
 with col2:
-    circuit = st.selectbox("CIRCUIT", [4, 5])
+    circuit = st.selectbox("CIRCUIT :", [4, 5])
 with col3:
-    poids_t = st.number_input("POIDS POCHE (t)", value=200, step=1)
+    poids_t = st.number_input("POIDS POCHE (t) :", value=0.0, step=1.0, format="%.2f")
     poids_kg = poids_t * 1000
 
 st.divider()
 
-# --- SAISIE DES ANALYSES ---
+# --- GÉNÉRATION DES LIGNES ---
 saisies = {}
 elements = DATA[nuance]
 ordre = []
 
-# Priorité au Manganèse pour l'Option B
+# Organisation des éléments (Mn en premier pour l'induit C)
 if "manganèse" in elements:
-    ordre.append(("Mn Carb (78%)", "mn_carb"))
-    ordre.append(("Mn Affi (82%)", "mn_affi"))
-for k in elements.keys():
+    ordre.append(("Mn Carb (78%)", "mn_carb", 78, elements["manganèse"]))
+    ordre.append(("Mn Affi (82%)", "mn_affi", 82, elements["manganèse"]))
+
+for k, v in elements.items():
     if k != "manganèse":
-        ordre.append((k.capitalize(), k))
+        ordre.append((k.capitalize(), k, None, v))
 
-header1, header2, header3 = st.columns([2, 1, 1])
-header1.write("**ÉLÉMENT**")
-header2.write("**ANA (%)**")
-header3.write("**VISÉE (%)**")
+# En-tête du tableau
+h1, h2, h3 = st.columns([2, 1, 1])
+h1.write("**ÉLÉMENT**")
+h2.write("**ANA (%)**")
+h3.write("**VISÉE (%)**")
 
-for label, key_id in ordre:
+for label, key_id, teneur_fixe, circuits in ordre:
     r1, r2, r3 = st.columns([2, 1, 1])
     with r1:
         st.write(f"**{label}**")
     with r2:
-        ana = st.number_input("", key=f"a_{key_id}", format="%.4f", step=0.001, label_visibility="collapsed")
+        ana = st.number_input("", key=f"a_{key_id}", step=0.001, format="%.4f", label_visibility="collapsed")
     with r3:
-        vis = st.number_input("", key=f"v_{key_id}", format="%.4f", step=0.001, label_visibility="collapsed")
-    saisies[key_id] = {"ana": ana, "vis": vis, "label": label}
-
-# --- CALCULS AVEC FORMULE SPÉCIFIQUE ---
-if st.button("CALCULER LES AJOUTS", type="primary", use_container_width=True):
-    carb_induit = 0.0
-    resultats = []
-
-    # 1. Calcul du Manganèse Carb (Pour l'induit Carbone)
-    if "mn_carb" in saisies:
-        d = saisies["mn_carb"]
-        rend = elements["manganèse"].get(circuit, (0, 0))[0]
-        if d["vis"] > d["ana"] and rend > 0:
-            # Formule: ((vis - ana) / 100 * poids) / (teneur/100 * rend/100)
-            aj_mn = ((d["vis"] - d["ana"]) / 100 * poids_kg) / (0.78 * (rend / 100))
-            carb_induit = (aj_mn * 0.067) / poids_kg * 100
-            resultats.append({"Métal": d["label"], "Ajout (/100)": round(aj_mn / 100, 2)})
-        else:
-            resultats.append({"Métal": d["label"], "Ajout (/100)": 0})
-
-    # 2. Calcul des autres éléments
-    for key_id, d in saisies.items():
-        if key_id == "mn_carb": continue
-        
-        # Déterminer teneur et rendement
-        if key_id == "mn_affi":
-            rend = elements["manganèse"].get(circuit, (0, 0))[0]
-            teneur = 82
-        else:
-            rend, teneur = elements[key_id].get(circuit, (0, 0))
-
-        # Correction Carbone induit
-        ana_finale = d["ana"]
-        if key_id == "carbone":
-            ana_finale += carb_induit
-
-        if d["vis"] > ana_finale and rend > 0:
-            # Application de la formule utilisateur
-            aj = ((d["vis"] - ana_finale) / 100 * poids_kg) / ((teneur / 100) * (rend / 100))
-            resultats.append({"Métal": d["label"], "Ajout (/100)": round(aj / 100, 2)})
-        else:
-            resultats.append({"Métal": d["label"], "Ajout (/100)": 0})
-
-    # --- AFFICHAGE DU RÉCAPITULATIF ---
-    st.divider()
-    st.subheader("📋 RÉSULTATS (Valeurs divisées par 100)")
-    st.table(pd.DataFrame(resultats))
+        vis = st.number_input("", key=f"v_{key_id}", step=0.001, format="%.4f", label_visibility="collapsed")
     
-    if carb_induit > 0:
-        st.info(f"💡 Info Option B : Le Mn Carb a ajouté +{carb_induit:.4f}% de Carbone à l'analyse.")
+    saisies[key_id] = {
+        "label": label,
+        "ana": ana,
+        "vis": vis,
+        "teneur_fixe": teneur_fixe,
+        "circuits": circuits
+    }
+
+st.divider()
+
+# --- CALCULS ---
+if st.button("CALCULER", type="primary", use_container_width=True):
+    if poids_t <= 0:
+        st.error("Veuillez saisir un poids de poche.")
+    else:
+        carb_induit = 0.0
+        resultats_final = []
+
+        # 1. ÉTAPE Mn Carb (Induit Carbone)
+        if "mn_carb" in saisies:
+            d = saisies["mn_carb"]
+            rend = d["circuits"].get(circuit, (0, 0))[0]
+            if d["vis"] > d["ana"] and rend > 0:
+                ajout_mn = ((d["vis"] - d["ana"]) / 100 * poids_kg) / (0.78 * rend / 100)
+                ajout_mn = max(0, ajout_mn)
+                carb_induit = (ajout_mn * 0.067) / poids_kg * 100
+                resultats_final.append({"Métal": d["label"], "Ajout (kg)": f"{ajout_mn:.2f}"})
+            else:
+                resultats_final.append({"Métal": d["label"], "Ajout (kg)": "0.00"})
+
+        # 2. ÉTAPE Autres éléments (avec correction Carbone)
+        for key_id, d in saisies.items():
+            if key_id == "mn_carb": continue
+            
+            ana_finale = d["ana"]
+            if key_id == "carbone":
+                ana_finale += carb_induit
+            
+            # Récupération Teneur et Rendement
+            rend_tab, ten_tab = d["circuits"].get(circuit, (0,0))
+            teneur = d["teneur_fixe"] if d["teneur_fixe"] else ten_tab
+            rendement = rend_tab
+
+            if d["vis"] > ana_finale and rendement > 0:
+                aj = ((d["vis"] - ana_finale) / 100 * poids_kg) / (teneur / 100 * rendement / 100)
+                resultats_final.append({"Métal": d["label"], "Ajout (kg)": f"{max(0, aj):.2f}"})
+            elif d["vis"] <= ana_finale and d["vis"] > 0:
+                resultats_final.append({"Métal": d["label"], "Ajout (kg)": "0.00 (OK)"})
+            else:
+                resultats_final.append({"Métal": d["label"], "Ajout (kg)": "0.00"})
+
+        # Affichage
+        st.subheader("📋 RÉSULTATS")
+        st.table(pd.DataFrame(resultats_final))
+        if carb_induit > 0:
+            st.warning(f"💡 Apport Mn -> Carbone : +{carb_induit:.3f}%")
+
+if st.button("RAZ (Réinitialiser)"):
+    st.rerun()
+            
