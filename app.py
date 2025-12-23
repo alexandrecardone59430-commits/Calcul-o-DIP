@@ -27,7 +27,7 @@ DATA = {
     "4647": {"aluminium": {4: (100, 94), 5: (100, 94)}, "carbone": {4: (100, 100), 5: (100, 100)}, "calcium": {4: (13, 99), 5: (11, 99)}, "bore": {4: (89, 19), 5: (89, 19)}, "manganèse": {4: (100, 78), 5: (100, 78)}, "nobium": {4: (89, 66), 5: (91, 66)}, "silicium": {4: (90, 76), 5: (90, 76)}, "Titane": {4: (85, 69), 5: (83, 69)}}
 }
 
-st.title("📟 Calculateur Fonderie")
+st.title("📟 Calcul'O'DIP OB")
 
 # --- PARAMÈTRES GÉNÉRAUX ---
 col1, col2, col3 = st.columns(3)
