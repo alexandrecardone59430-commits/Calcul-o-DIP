@@ -4,7 +4,7 @@ import pandas as pd
 # Configuration de la page
 st.set_page_config(page_title="Calculateur Fonderie", layout="centered")
 
-# --- BASE DE DONNÉES --- (Identique)
+# --- BASE DE DONNÉES ---
 DATA = {
     "7778": {"aluminium": {4: (67, 94)}, "carbone": {4: (70, 100)}, "calcium": {4: (12, 99)}, "bore": {4: (70, 19)}, "manganèse": {4: (90, 78)}, "nobium": {4: (90, 66)}, "silicium": {4: (85, 76)}, "Titane": {4: (75, 69)}},
     "7777": {"aluminium": {4: (100, 94), 5: (100, 94)}, "carbone": {4: (100, 100), 5: (100, 100)}, "calcium": {4: (13, 99), 5: (15, 99)}, "bore": {4: (89, 19), 5: (89, 19)}, "manganèse": {4: (100, 78), 5: (100, 78)}, "nobium": {4: (89, 66), 5: (91, 66)}, "silicium": {4: (90, 76), 5: (90, 76)}, "Titane": {4: (85, 69), 5: (83, 69)}},
@@ -57,9 +57,9 @@ if s_init and s_final:
             taux = ((val_init - val_final) / val_init) * 100
             st.success(f"**Taux de désulfuration : {taux:.2f}%**")
         else:
-            st.warning("Le S initial doit être supérieur à 0.")
+            st.warning("Le S initial doit être > 0")
     except ValueError:
-        st.error("Format de soufre invalide.")
+        pass
 
 st.divider()
 
@@ -144,3 +144,7 @@ if st.button("CALCULER", type="primary", use_container_width=True):
 
 if st.button("RAZ (Réinitialiser)"):
     st.rerun()
+
+# --- SIGNATURE ---
+st.divider()
+st.caption("Designed by Alexandre Cardone")
