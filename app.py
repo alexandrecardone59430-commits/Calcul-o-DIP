@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Configuration de la page
-st.set_page_config(page_title="Calculateur Fonderie - Option B", layout="centered")
+st.set_page_config(page_title="Calculateur Fonderie", layout="centered")
 
 # --- BASE DE DONNÉES ---
 DATA = {
@@ -54,19 +54,16 @@ for k, v in elements.items():
     if k != "manganèse":
         ordre.append((k.capitalize(), k, None, v))
 
-h1, h2, h3 = st.columns([2, 1, 1])
-h1.write("**ÉLÉMENT**")
-h2.write("**ANA (%)**")
-h3.write("**VISÉE (%)**")
+# Entête de section
+st.write("### 🧪 Saisie des Analyses")
 
 for label, key_id, teneur_fixe, circuits in ordre:
-    r1, r2, r3 = st.columns([2, 1, 1])
+    st.write(f"**{label}**")
+    r1, r2 = st.columns(2)
     with r1:
-        st.write(f"**{label}**")
+        ana_val = st.text_input("ANA", key=f"a_{key_id}")
     with r2:
-        ana_val = st.text_input("", key=f"a_{key_id}", label_visibility="collapsed")
-    with r3:
-        vis_val = st.text_input("", key=f"v_{key_id}", label_visibility="collapsed")
+        vis_val = st.text_input("VISÉE", key=f"v_{key_id}")
     
     saisies[key_id] = {
         "label": label,
@@ -77,8 +74,7 @@ for label, key_id, teneur_fixe, circuits in ordre:
         "teneur_fixe": teneur_fixe,
         "circuits": circuits
     }
-
-st.divider()
+    st.write("---")
 
 # --- CALCULS ---
 if st.button("CALCULER", type="primary", use_container_width=True):
@@ -97,9 +93,8 @@ if st.button("CALCULER", type="primary", use_container_width=True):
                 ajout_mn = max(0, ajout_mn)
                 carb_induit = (ajout_mn * 0.067) / poids_kg * 100
 
-        # 2. Boucle de calcul pour tous les éléments
+        # 2. Boucle de calcul
         for key_id, d in saisies.items():
-            # Correction spécifique pour le carbone
             ana_effective = d["ana"]
             note_carbone = ""
             if key_id == "carbone":
@@ -107,7 +102,6 @@ if st.button("CALCULER", type="primary", use_container_width=True):
                 if carb_induit > 0:
                     note_carbone = f" (+{carb_induit:.3f} induit)"
             
-            # Calcul de l'ajout
             rend_tab, ten_tab = d["circuits"].get(circuit, (0,0))
             teneur = d["teneur_fixe"] if d["teneur_fixe"] else ten_tab
             
@@ -116,7 +110,6 @@ if st.button("CALCULER", type="primary", use_container_width=True):
                 aj_kg = ((d["vis"] - ana_effective) / 100 * poids_kg) / (teneur / 100 * rend_tab / 100)
                 ajout_final = max(0, aj_kg)
             
-            # Ajout au tableau récapitulatif
             resultats_final.append({
                 "Métal": d["label"],
                 "Analyse (%)": d["ana_str"] + note_carbone,
@@ -125,7 +118,6 @@ if st.button("CALCULER", type="primary", use_container_width=True):
             })
 
         st.subheader("📋 RÉCAPITULATIF DES CALCULS")
-        # On affiche le DataFrame avec les nouvelles colonnes
         st.dataframe(pd.DataFrame(resultats_final), use_container_width=True, hide_index=True)
         
         if carb_induit > 0:
