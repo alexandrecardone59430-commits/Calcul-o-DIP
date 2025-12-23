@@ -49,17 +49,21 @@ with c_s1:
 with c_s2:
     s_final = st.text_input("S Final (%)", key="s_final")
 
-if s_init and s_final:
-    try:
-        val_init = float(s_init.replace(',', '.'))
-        val_final = float(s_final.replace(',', '.'))
-        if val_init > 0:
-            taux = ((val_init - val_final) / val_init) * 100
-            st.success(f"**Taux de désulfuration : {taux:.2f}%**")
-        else:
-            st.warning("Le S initial doit être > 0")
-    except ValueError:
-        pass
+# BOUTON DÉDIÉ SOUS LE S FINAL
+if st.button("CALCULER TAUX", use_container_width=True):
+    if s_init and s_final:
+        try:
+            val_init = float(s_init.replace(',', '.'))
+            val_final = float(s_final.replace(',', '.'))
+            if val_init > 0:
+                taux = ((val_init - val_final) / val_init) * 100
+                st.success(f"**Taux de désulfuration : {taux:.2f}%**")
+            else:
+                st.warning("Le S initial doit être > 0")
+        except ValueError:
+            st.error("Format invalide.")
+    else:
+        st.info("Saisissez l'analyse initiale et finale.")
 
 st.divider()
 
@@ -97,8 +101,8 @@ for label, key_id, teneur_fixe, circuits in ordre:
     }
     st.write("---")
 
-# --- CALCULS ---
-if st.button("CALCULER", type="primary", use_container_width=True):
+# --- CALCULS MÉTAUX ---
+if st.button("CALCULER AJOUTS MÉTAUX", type="primary", use_container_width=True):
     if poids_kg <= 0:
         st.error("Veuillez saisir un poids de poche.")
     else:
@@ -148,3 +152,4 @@ if st.button("RAZ (Réinitialiser)"):
 # --- SIGNATURE ---
 st.divider()
 st.caption("Designed by Alexandre Cardone")
+    
